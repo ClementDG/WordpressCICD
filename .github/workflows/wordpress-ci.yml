@@ -37,7 +37,8 @@ jobs:
           test -f generated/mariadb-service.yaml || exit 1
           test -f generated/mariadb-data-persistentvolumeclaim.yaml || exit 1
           test -f generated/wordpress-deployment.yaml || exit 1
-          test -f generated/wordpress-tcp-service.yaml || exit 1
+          test -f generated/wordpress-service.yaml || exit 1
+          test -f generated/wordpress-data-persistentvolumeclaim.yaml || exit 1
           echo "Tous les manifests requis sont presents"
 
       - name: Create zip archive

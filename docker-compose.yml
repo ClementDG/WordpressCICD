@@ -31,6 +31,8 @@ services:
       WORDPRESS_DATABASE_USER: wordpress
       WORDPRESS_DATABASE_PASSWORD: secret
       WORDPRESS_DATABASE_NAME: wordpress
+    volumes:
+      - wordpress-data:/bitnami/wordpress
     depends_on:
       - mariadb
     deploy:
@@ -44,4 +46,6 @@ services:
 
 volumes:
   mariadb-data:
+    driver: local
+  wordpress-data:
     driver: local
