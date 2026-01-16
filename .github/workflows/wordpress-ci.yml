@@ -1,0 +1,71 @@
+name: WordPress - Generate Kubernetes Manifests and Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  NOM: "Dagama"
+  PRENOM: "Clement"
+
+jobs:
+  generate-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kompose
+        run: |
+          curl -L https://github.com/kubernetes/kompose/releases/download/v1.31.2/kompose-linux-amd64 -o kompose
+          chmod +x kompose
+          sudo mv kompose /usr/local/bin/kompose
+          kompose version
+
+      - name: Generate Kubernetes manifests with kompose
+        run: |
+          echo "Generating Kubernetes manifests from docker-compose.yml..."
+          kompose convert -f docker-compose.yml -o generated/
+          ls -la generated/
+
+      - name: Smoke tests
+        run: |
+          echo "Verification des manifests generes..."
+          test -f generated/mariadb-deployment.yaml || exit 1
+          test -f generated/mariadb-service.yaml || exit 1
+          test -f generated/mariadb-data-persistentvolumeclaim.yaml || exit 1
+          test -f generated/wordpress-deployment.yaml || exit 1
+          test -f generated/wordpress-tcp-service.yaml || exit 1
+          echo "Tous les manifests requis sont presents"
+
+      - name: Create zip archive
+        run: |
+          mkdir -p ${{ env.NOM }}${{ env.PRENOM }}
+          cp -r generated/*.yaml ${{ env.NOM }}${{ env.PRENOM }}/
+          zip -r ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip ${{ env.NOM }}${{ env.PRENOM }}/
+          ls -lh ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
+
+      - name: Upload to FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: ./RenduDevopsKube/
+          include: |
+            ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+          dangerous-salt-security-toggle: true
+
+      - name: Upload artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubernetes-manifests-wordpress
+          path: ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
+          retention-days: 30
