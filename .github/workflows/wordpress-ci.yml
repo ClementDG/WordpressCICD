@@ -42,10 +42,12 @@ jobs:
 
       - name: Create zip archive
         run: |
-          mkdir -p ${{ env.NOM }}${{ env.PRENOM }}
-          cp -r generated/*.yaml ${{ env.NOM }}${{ env.PRENOM }}/
-          zip -r ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip ${{ env.NOM }}${{ env.PRENOM }}/
-          ls -lh ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
+          cd generated/
+          zip -r ../${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip *.yaml
+          cd ..
+          mkdir -p upload
+          mv ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip upload/
+          ls -lh upload/
 
       - name: Upload to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -53,19 +55,14 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
+          local-dir: ./upload/
           server-dir: ./RenduDevopsKube/
-          include: |
-            ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
           dangerous-salt-security-toggle: true
+          dry-run: false
 
       - name: Upload artifact (backup)
         uses: actions/upload-artifact@v4
         with:
           name: kubernetes-manifests-wordpress
-          path: ${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
+          path: upload/${{ env.NOM }}${{ env.PRENOM }}Wordpress.zip
           retention-days: 30
