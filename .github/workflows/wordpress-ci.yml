@@ -25,6 +25,11 @@ jobs:
           kompose version
 
       - name: Generate Kubernetes manifests with kompose
+        env:
+          DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           echo "Generating Kubernetes manifests from docker-compose.yml..."
           kompose convert -f docker-compose.yml -o generated/
